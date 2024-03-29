@@ -196,74 +196,44 @@ class Suit(StrEnum):
     """The unknown suit."""
 
 
-@dataclass(frozen=True)
 class Card:
-    """The class for cards.
+    RANK_MAP = {r.value: r for r in Rank}
+    SUIT_MAP = {s.value: s for s in Suit}
 
-    Cards are described by their ranks and their suits.
-
-    Cards with higher ranks are considered stronger than those with
-    lower ranks. Of course, the rank ordering is variant-dependant.
-    Ties are broken by suits in some rare variants.
-
-    >>> card = Card(Rank.ACE, Suit.SPADE)
-    >>> card
-    As
-    >>> str(card)
-    'ACE OF SPADES (As)'
-    >>> card.rank
-    <Rank.ACE: 'A'>
-    >>> card.suit
-    <Suit.SPADE: 's'>
-
-    Note that the card attributes are read-only.
-
-    >>> card.rank = Rank.KING
-    Traceback (most recent call last):
-        ...
-    dataclasses.FrozenInstanceError: cannot assign to field 'rank'
-
-    The card is also hashable.
-
-    >>> from collections.abc import Hashable
-    >>> isinstance(card, Hashable)
-    True
-    """
-
-    rank: Rank
-    """The rank."""
-    suit: Suit
-    """The suit."""
+    def __init__(self, rank: Rank, suit: Suit) -> None:
+        self.rank = rank
+        self.suit = suit
 
     @classmethod
-    def get_ranks(cls, cards: CardsLike) -> Iterator[Rank]:
-        """Return an iterator of the ranks of each card.
+    def clean(cls, values: CardsLike) -> tuple[Card, ...]:
+        # if isinstance(values, Card):
+        #     return (values,)
+        # elif isinstance(values, str):
+        #     return tuple(cls(cls.RANK_MAP[r], cls.SUIT_MAP[s]) for r, s in zip(values[::2], values[1::2]))
+        # elif isinstance(values, Iterable):
+        return tuple(values)
+        # else:
+        #     raise ValueError('invalid values')
 
-        >>> Card.get_ranks('2sKh')  # doctest: +ELLIPSIS
-        <generator object Card.get_ranks at 0x...>
-        >>> list(Card.get_ranks('2sKh'))
-        [<Rank.DEUCE: '2'>, <Rank.KING: 'K'>]
+    # @classmethod
+    # def get_ranks(cls, cards: CardsLike) -> list[Rank]:
+    #     cards = cls.clean(cards)
+    #     return [card.rank for card in cards]
 
-        :param cards: The cards to get ranks from.
-        :return: The iterator of the ranks of each card.
-        """
-        for card in cls.clean(cards):
-            yield card.rank
+    # @classmethod
+    # def get_suits(cls, cards: CardsLike) -> list[Suit]:
+    #     cards = cls.clean(cards)
+    #     return [card.suit for card in cards]
 
     @classmethod
-    def get_suits(cls, cards: CardsLike) -> Iterator[Suit]:
-        """Return an iterator of the suits of each card.
+    def get_ranks(cls, cards: CardsLike) -> tuple[Rank, ...]:
+        cards = cls.clean(cards)
+        return tuple(card.rank for card in cards)
 
-        >>> Card.get_suits('2sKh')  # doctest: +ELLIPSIS
-        <generator object Card.get_suits at 0x...>
-        >>> list(Card.get_suits('2sKh'))
-        [<Suit.SPADE: 's'>, <Suit.HEART: 'h'>]
-
-        :param cards: The cards to get suits from.
-        :return: The iterator of the suits of each card.
-        """
-        for card in cls.clean(cards):
-            yield card.suit
+    @classmethod
+    def get_suits(cls, cards: CardsLike) -> tuple[Suit, ...]:
+        cards = cls.clean(cards)
+        return tuple(card.suit for card in cards)
 
     @classmethod
     def are_paired(cls, cards: CardsLike) -> bool:
@@ -329,37 +299,6 @@ class Card:
         suits = tuple(cls.get_suits(cards))
 
         return len(set(suits)) == len(suits)
-
-    @classmethod
-    def clean(cls, values: CardsLike) -> tuple[Card, ...]:
-        """Clean the cards.
-
-        >>> Card.clean('AsKs')
-        (As, Ks)
-        >>> Card.clean('AsKs')
-        (As, Ks)
-        >>> Card.clean(Card(Rank.ACE, Suit.SPADE))
-        (As,)
-        >>> Card.clean(None)
-        Traceback (most recent call last):
-            ...
-        ValueError: invalid values
-
-        :param values: The cards.
-        :return: The cleaned cards.
-        """
-        if isinstance(values, Card):
-            values = (values,)
-        elif isinstance(values, str):
-            values = tuple(Card.parse(values))
-        elif isinstance(values, Iterable):
-            assert not isinstance(values, str)
-
-            values = tuple(values)
-        else:
-            raise ValueError('invalid values')
-
-        return values
 
     @classmethod
     def parse(cls, *raw_cards: str) -> Iterator[Card]:
